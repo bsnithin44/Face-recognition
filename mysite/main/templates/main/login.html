@@ -1,0 +1,10 @@
+{% extends "main/home.html" %}
+{% block content %}
+    <form method ="POST">
+      {% csrf_token%}
+      {{form}}
+      <button type="submit">login</button>
+    </form>
+    If dont have an account then <a href="/register">register</a> now.
+    {% endblock %}
+    
