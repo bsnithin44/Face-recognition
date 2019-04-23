@@ -1,0 +1,18 @@
+
+{% extends "main/home.html" %}
+{% block content %}
+<head>
+        <!-- Plotly.js -->
+         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+      </head>
+
+        <img src="../../../media/result.jpeg" alt="result" width="500" height="333">
+
+        Happiness level :
+        {% for x in emotion_happiness%}
+                {{ x }}
+        {% endfor %}
+
+{% endblock %}  
+
+

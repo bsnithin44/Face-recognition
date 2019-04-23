@@ -17,8 +17,7 @@ from django.urls import path
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
-
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 app_name = 'main'
 
@@ -27,6 +26,7 @@ urlpatterns = [
     path("register/",views.register,name='register'),
     path("logout/",views.logout_request,name='logout'),
     path("login/",views.login_request,name='login'),
-    path("upload/",views.upload,name="upload"),
-    path("fit/",views.fit_data,name="fit"),
+    path("capture/",views.capture,name="capture"),
+    path("detect/",views.detect,name="detect"),
     ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += staticfiles_urlpatterns()

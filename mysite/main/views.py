@@ -4,34 +4,27 @@ from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
 from django.contrib.auth import login,logout,authenticate
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
-# from fbprophet import Prophet
+import cv2,base64,json,time,os,requests
 import pandas as pd
-import json
-
-
-import pandas as pd
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from pandas.io.json import json_normalize
-import os,requests,json
+
 
 subscription_key = '0b138b19f25a45379d64a4739b16aaf7'
 
 face_api_url = 'https://southeastasia.api.cognitive.microsoft.com/face/v1.0/detect'
 
-image_url = 'https://upload.wikimedia.org/wikipedia/commons/3/37/Dagestani_man_and_woman.jpg'
 
-headers = { 'Ocp-Apim-Subscription-Key': subscription_key }
+headers = {'Content-Type': 'application/octet-stream', 
+           'Ocp-Apim-Subscription-Key': subscription_key}
     
 params = {
     'returnFaceId': 'true',
     'returnFaceLandmarks': 'false',
     'returnFaceAttributes': 'age,gender,headPose,smile,facialHair,glasses,emotion,hair,makeup,occlusion,accessories,blur,exposure,noise',
 }
-
-
-
-def Facerecognition():
-    response = requests.post(face_api_url,params=params, headers=headers, json={"url": image_url})
-    return response.json()
 
 
 def homepage(request):
@@ -85,38 +78,52 @@ def login_request(request):
                 "main/login.html",
                 {"form":form})
         
-def upload(request):
-    if request.method == "POST":
-        uploaded_file = request.FILES['document']
-        type_ = request.POST.get('type')
-        if uploaded_file is not None:
-            fs = FileSystemStorage()
-            fs.save(uploaded_file.name,uploaded_file)
-            messages.info(request,"The file is uploaded successfully")
-            # with open(f"http://127.0.0.1:8000/media/{uploaded_file.name}",'rb') as f:
-            #     image_data = f.read()
-            request.session['image_data'] = 0
-            return redirect("main:homepage")
-        else:
-            messages.error(request,'The file could not be uploaded')
-    else:
-        pass
-    return render(request,'main/upload.html')
+
+def capture(request):
+
+    camera = cv2.VideoCapture(0)
+    return_value, image = camera.read()
+    cv2.imwrite('media/temp.jpeg', image)
+    del(camera)       
+
+    return redirect('main:homepage')
 
 
 
+def detect(request):
+    with open('media/temp.jpeg','rb') as f:
+        image_data  =f.read()
+    img = mpimg.imread('media/temp.jpeg')
+    print('read')
+    i = 0
+    while True or i>5:
+        response = requests.post(face_api_url,params=params, headers=headers, data = image_data)
+        time.sleep(2)
+        if response.status_code == 200:
+            break
+        time.sleep(1)
+        i +=1
 
-def fit_data(request):
 
-    image_data = request.session['image_data']
-
-    response = requests.post(face_api_url,params=params, headers=headers, json={"url": image_url})
+    ids = []
+    emotion_happiness = []
     data = response.json()
-    face_id = data[0]['faceId']
+    fig,ax = plt.subplots(1)
+    for i in range(len(data)):
+        ids.append(data[i]['faceId'])
+        top = data[i]['faceRectangle']['top']
+        left = data[i]['faceRectangle']['left']
+        height = data[i]['faceRectangle']['height']
+        width = data[i]['faceRectangle']['width']
+        emotion_happiness.append(data[i]['faceAttributes']['emotion']['happiness'])
+        ax.imshow(img)
+        rect = patches.Rectangle((left,top),width,height,linewidth=2,edgecolor='g',facecolor='none')
+        ax.add_patch(rect)
+    plt.savefig('media/result.jpeg')
 
-    return render(request,'main/fit.html', 
+    return render(request,'main/detect.html', 
             {
-                'face_id': face_id ,
+                'emotion_happiness': emotion_happiness ,
 
 
             } 
