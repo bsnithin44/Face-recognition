@@ -97,7 +97,7 @@ def detect(request):
     print('read')
     i = 0
     while True or i>5:
-        response = requests.post(face_api_url,params=params, headers=headers, data = image_data)
+        response = requests.post(face_api_url,params=params, headers=headers, data = image_data,timeout=2)
         time.sleep(2)
         if response.status_code == 200:
             break
