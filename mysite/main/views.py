@@ -10,25 +10,16 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from pandas.io.json import json_normalize
+import cognitive_face as cf
 
-
+cf.util.requests.ConnectTimeout = 1
 subscription_key = '0b138b19f25a45379d64a4739b16aaf7'
-
-face_api_url = 'https://southeastasia.api.cognitive.microsoft.com/face/v1.0/detect'
-
-
-headers = {'Content-Type': 'application/octet-stream', 
-           'Ocp-Apim-Subscription-Key': subscription_key}
-    
-params = {
-    'returnFaceId': 'true',
-    'returnFaceLandmarks': 'false',
-    'returnFaceAttributes': 'age,gender,headPose,smile,facialHair,glasses,emotion,hair,makeup,occlusion,accessories,blur,exposure,noise',
-}
-
+base_url = 'https://southeastasia.api.cognitive.microsoft.com/face/v1.0'
+cf.Key.set(subscription_key)
+cf.BaseUrl.set(base_url)
 
 def homepage(request):
-    return render(request,'main/home.html')
+    return render(request,'main/home2.html')
 
 def register(request):
     if request.method == "POST":
@@ -128,3 +119,75 @@ def detect(request):
 
             } 
                 )            
+
+
+#################################################################
+#            Code Under Test
+
+def process(request):
+     if not len(cf.person_group.lists()) == 0:
+         face_detect = cf.face.detect('media/image from button.jpeg')
+         response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
+         r2 = response[0]['candidates']
+         if len(r2)>0:
+            df_r = json_normalize(r2)
+            print(response)
+            df_r.sort_values('confidence',ascending=False,inplace=True)
+            if df_r['confidence'][0]>0.70:
+                return render(request,'main/results.html',
+                {
+                    'detected_faceId': df_r['personId'][0] ,
+                    'confidence': df_r['confidence'][0]    
+                }            
+                )
+         else:
+
+             # Go to details page
+             messages.error(request,'Please Try again')
+             return render(request,'main/home2.html')
+     else:
+         return render(request,'main/details.html')
+
+def details(request):
+    return render(request,'main/details.html')
+
+def process_old(request):
+    if len(cf.person_group.lists()) == 0:
+        cf.person_group.create(person_group_id='group_1',name='all')
+    else:
+        face_detect = cf.face.detect('media/image from button.jpeg')
+        try:
+            response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
+            print('responasdasdasdasdnasna-------------------------------')
+            if len(response) >0:
+                r2 = response[0]['candidates']
+                df_r = json_normalize(r2)
+                df_r.sort_values('confidence',ascending=False,inplace=True)
+                print('got a response')
+                return render(request,'main/results.html', 
+                        {
+                            'detected_faceId': df_r['personId'][0] ,
+                            'confidence': df_r['confidence'][0]
+
+                        } 
+                            )    
+        except Exception as e:
+            cf_id = cf.person.create('group_1','nithin')            
+            cf.person.add_face('media/image from button.jpeg','group_1',cf_id['personId'])
+            cf.person_group.train('group_1')
+            print('training done')
+            messages.info(request,'New person detected and trained')
+            return render(request,'main/home2.html')
+
+def results(request):
+    render(request,"main/results.html")
+
+def image(request):
+    print('here')
+    camera = cv2.VideoCapture(0)
+    return_value,image = camera.read()
+    cv2.imwrite('media/image from button.jpeg', image)
+    del camera
+
+    return render(request,'main/image.html')
+#################################################################

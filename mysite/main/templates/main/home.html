@@ -7,21 +7,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
             
     <nav>
-        <div class="nav-wrapper">
-        <a href="#" class="brand-logo">Microsoft-Face</a>
-        <ul id="nav-mobile" class="right hide-on-med-and-down">
+        <div class="nav-wrapper blue darken-2" co>
+        <a href="#!" class="brand-logo center">Microsoft-Face-Api</a>
+        
             {% if user.is_authenticated %}
-                <li><a href="http://127.0.0.1:8000">home</a></li>
-                <li><a href="http://127.0.0.1:8000/logout">Logout</a></li>
-                <li><a href="http://127.0.0.1:8000/capture">capture</a></li>
-                <li><a href="http://127.0.0.1:8000/detect">detect</a></li>
+            <ul id="nav-mobile" class="left hide-on-med-and-down" >
+                <li ><a href="http://127.0.0.1:8000">Home</a></li>
+                <li ><a href="http://127.0.0.1:8000/capture">Capture</a></li>
+                <li ><a href="http://127.0.0.1:8000/detect">Detect</a></li>
+            </ul>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li ><a href="http://127.0.0.1:8000/logout">Logout</a></li>
+            </ul>
             {% else %}
-                <li><a href="http://127.0.0.1:8000/register">Register</a></li>
-                <li><a href="http://127.0.0.1:8000/login">Login</a></li>
+            <ul id="nav-mobile" class="left hide-on-med-and-down">
+                <li ><a href="http://127.0.0.1:8000/login">Login</a></li>
+                <li ><a href="http://127.0.0.1:8000/register">Register</a></li>
+            </ul>
             {% endif %}
-        </ul>
+        
         </div>
     </nav>
+    
+  
     {% if messages %}
         {% for message in messages%}
             {% if message.tags == 'success'%}
