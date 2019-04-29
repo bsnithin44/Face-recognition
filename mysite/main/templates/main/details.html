@@ -1,2 +1,17 @@
 {% extends "main/home.html" %}
-<button type="submit">submit image</button>
+{% block content %}
+<form method ='post' enctype="multipart/form-data">
+{% csrf_token %}
+
+Please enter Name
+
+<body>
+    
+    <input type='text' name = 'name'>
+    <form action= '' method ="GET">
+        <button type="submit">register image</button>
+      </form> 
+
+</body>
+</form>
+  {% endblock %}

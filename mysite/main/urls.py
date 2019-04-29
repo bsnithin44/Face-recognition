@@ -32,6 +32,7 @@ urlpatterns = [
     path('image/process/',views.process,name='process'),
     path('results/',views.results,name='results'),
     path('details/',views.details,name='details'),
+    path('image/details/',views.details,name='details'),
     # path('capture2/image/',views.image,name='image'),
     ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 urlpatterns += staticfiles_urlpatterns()

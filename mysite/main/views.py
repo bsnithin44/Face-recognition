@@ -70,6 +70,125 @@ def login_request(request):
                 {"form":form})
         
 
+def process(request):
+    try:
+        face_detect = cf.face.detect('media/image from button.jpeg') 
+        response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
+        print('response recieved')
+        r2 = response[0]['candidates']
+        print(1)
+        if len(r2)>0:
+            df_r = json_normalize(r2)
+            print(2)
+            df_r.sort_values('confidence',ascending=False,inplace=True)
+            if df_r['confidence'][0]>0.70:
+                print(3)
+                # Matched with good accuracy so head to results page and show an image or name of the person
+                data_persons = cf.person.lists('group_1')
+                df_persons = json_normalize(data_persons)
+                detected_personId = df_r['personId'][0]
+                detected_confidence = df_r['confidence'][0] 
+                name_of_detected_person = df_persons[df_persons['personId']==detected_personId]['name'].values[0]
+                messages.success(request,"Detected!")
+                return render(request,'main/results.html',
+                {
+                    'detected_faceId': detected_personId ,
+                    'confidence': detected_confidence  ,
+                    'name':name_of_detected_person 
+                }            
+                )
+            elif df_r['confidence'][0]>.50 and df_r['confidence'][0]<0.70:
+                messages.info(request,"Please try again")
+                return render(request,'main/home2.html')
+            else:
+                # Achived very less accuracy So ask the try again else ask to register
+                # Go to Details page
+                messages.info(request,'Please register again')
+                return render(request,"main/details.html")
+        else:
+            print('1b')
+            return render(request,"main/details.html")
+    except Exception as e:
+        messages.error(request,e)
+        # return render(request,'main/home2.html')
+        return redirect('main:homepage')
+        #  take details and train
+            
+
+#################################################################
+#            Code Under Test
+
+
+
+def details(request):
+    if request.method == "POST":
+        name_of_person = request.POST.get('name')
+        if len(cf.person_group.lists()) == 0:
+            cf.person_group.create('group_1','all')
+            new_person = cf.person.create('group_1',name_of_person)
+            cf.person.add_face('media/image from button.jpeg','group_1',new_person['personId'])   
+        else:
+            data_persons = cf.person.lists('group_1')  
+            df_persons = json_normalize(data_persons)
+            if name_of_person in df_persons['name'].values:
+                id_of_person = df_persons[df_persons['name']==name_of_person]['personId'].values[0]
+                cf.person.add_face('media/image from button.jpeg','group_1',id_of_person)
+            else:
+                new_person = cf.person.create('group_1',name_of_person)
+                cf.person.add_face('media/image from button.jpeg','group_1',new_person['personId'])
+        cf.person_group.train('group_1')
+
+        return redirect("main:homepage")
+    else:
+        pass
+    return render(request,"main/details.html")
+
+
+
+
+
+def process_old(request):
+    if len(cf.person_group.lists()) == 0:
+        cf.person_group.create(person_group_id='group_1',name='all')
+    else:
+        face_detect = cf.face.detect('media/image from button.jpeg')
+        try:
+            response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
+            print('responasdasdasdasdnasna-------------------------------')
+            if len(response) >0:
+                r2 = response[0]['candidates']
+                df_r = json_normalize(r2)
+                df_r.sort_values('confidence',ascending=False,inplace=True)
+                print('got a response')
+                return render(request,'main/results.html', 
+                        {
+                            'detected_faceId': df_r['personId'][0] ,
+                            'confidence': df_r['confidence'][0]
+
+                        } 
+                            )    
+        except Exception as e:
+            cf_id = cf.person.create('group_1','nithin')            
+            cf.person.add_face('media/image from button.jpeg','group_1',cf_id['personId'])
+            cf.person_group.train('group_1')
+            print('training done')
+            messages.info(request,'New person detected and trained')
+            return render(request,'main/home2.html')
+
+def results(request):
+    render(request,"main/results.html")
+
+def image(request):
+    print('here')
+    camera = cv2.VideoCapture(0)
+    return_value,image = camera.read()
+    cv2.imwrite('media/image from button.jpeg', image)
+    del camera
+
+    return render(request,'main/image.html')
+#################################################################
+#  Old Code TBD
+
 def capture(request):
 
     camera = cv2.VideoCapture(0)
@@ -120,74 +239,3 @@ def detect(request):
             } 
                 )            
 
-
-#################################################################
-#            Code Under Test
-
-def process(request):
-     if not len(cf.person_group.lists()) == 0:
-         face_detect = cf.face.detect('media/image from button.jpeg')
-         response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
-         r2 = response[0]['candidates']
-         if len(r2)>0:
-            df_r = json_normalize(r2)
-            print(response)
-            df_r.sort_values('confidence',ascending=False,inplace=True)
-            if df_r['confidence'][0]>0.70:
-                return render(request,'main/results.html',
-                {
-                    'detected_faceId': df_r['personId'][0] ,
-                    'confidence': df_r['confidence'][0]    
-                }            
-                )
-         else:
-
-             # Go to details page
-             messages.error(request,'Please Try again')
-             return render(request,'main/home2.html')
-     else:
-         return render(request,'main/details.html')
-
-def details(request):
-    return render(request,'main/details.html')
-
-def process_old(request):
-    if len(cf.person_group.lists()) == 0:
-        cf.person_group.create(person_group_id='group_1',name='all')
-    else:
-        face_detect = cf.face.detect('media/image from button.jpeg')
-        try:
-            response = cf.face.identify([face_detect[0]['faceId']],person_group_id='group_1')
-            print('responasdasdasdasdnasna-------------------------------')
-            if len(response) >0:
-                r2 = response[0]['candidates']
-                df_r = json_normalize(r2)
-                df_r.sort_values('confidence',ascending=False,inplace=True)
-                print('got a response')
-                return render(request,'main/results.html', 
-                        {
-                            'detected_faceId': df_r['personId'][0] ,
-                            'confidence': df_r['confidence'][0]
-
-                        } 
-                            )    
-        except Exception as e:
-            cf_id = cf.person.create('group_1','nithin')            
-            cf.person.add_face('media/image from button.jpeg','group_1',cf_id['personId'])
-            cf.person_group.train('group_1')
-            print('training done')
-            messages.info(request,'New person detected and trained')
-            return render(request,'main/home2.html')
-
-def results(request):
-    render(request,"main/results.html")
-
-def image(request):
-    print('here')
-    camera = cv2.VideoCapture(0)
-    return_value,image = camera.read()
-    cv2.imwrite('media/image from button.jpeg', image)
-    del camera
-
-    return render(request,'main/image.html')
-#################################################################
